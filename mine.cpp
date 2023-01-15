@@ -234,9 +234,9 @@ int main() {
     Point cursor = {0, 0};
     
     //resize console window
-    char buffer[128];
-    std::snprintf(buffer, 128, "mode con: cols=%d lines=%d", BOARD_W*3, BOARD_H+8);
-    system(buffer);
+    char cmd_buf[128];
+    std::snprintf(cmd_buf, 128, "mode con: cols=%d lines=%d", BOARD_W*3, BOARD_H+8);
+    system(cmd_buf);
 
     //mainloop
     while (running) {
@@ -289,7 +289,8 @@ int main() {
         if (needs_redraw) {
             system("cls"); // clear screen
             print_board(&board, cursor, !running); //reveal entire board if game ending
-            print_board_info(&board, NUM_MINES);
+            if (running)
+                print_board_info(&board, NUM_MINES);
             needs_redraw = false;
         }
         Sleep(80);
