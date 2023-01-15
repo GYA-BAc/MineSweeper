@@ -1,5 +1,5 @@
 # MineSweeper
-Minesweeper in C++
+Terminal-Based Minesweeper in C++
 
 ### config:
  - windows (uses Windows.h header file)
