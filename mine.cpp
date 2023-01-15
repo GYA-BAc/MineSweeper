@@ -2,7 +2,6 @@
 #include <string>
 
 #include <Windows.h>
-#include <conio.h>
 
 #include <random>
 #include <time.h>
