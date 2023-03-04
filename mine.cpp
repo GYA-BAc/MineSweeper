@@ -1,10 +1,10 @@
 #include <iostream>
 #include <string>
+#include <random>
+#include <time.h>
 
 #include <Windows.h>
 
-#include <random>
-#include <time.h>
 
 #define BOARD_W 30
 #define BOARD_H 30
@@ -32,7 +32,6 @@ const Point SURROUNDING[8] = {
     { 0, -1},          { 0, 1},
     { 1, -1}, { 1, 0}, { 1, 1},
 };
-
 
 
 
@@ -164,9 +163,8 @@ bool reveal_point(Tile (*board)[BOARD_H][BOARD_W], Point pnt) {
 
     // if revealed square was Blank, reveal the surrounding squares recursively 
     for (int check=0; check<8; check++) {
-        if (!within_board_bounds(pnt.y+SURROUNDING[check].y, pnt.x+SURROUNDING[check].x))
-            continue;
-        reveal_point(board, Point {pnt.y+SURROUNDING[check].y, pnt.x+SURROUNDING[check].x});
+        if (within_board_bounds(pnt.y+SURROUNDING[check].y, pnt.x+SURROUNDING[check].x))
+            reveal_point(board, Point {pnt.y+SURROUNDING[check].y, pnt.x+SURROUNDING[check].x});
     }
 
     return false;
@@ -216,7 +214,7 @@ void print_board_info(Tile (*board)[BOARD_H][BOARD_W], int total_mines) {
 }
 
 
-int main() {
+void start_game(int difficulty) {
 
     // application variables
     bool running = true;
@@ -224,7 +222,22 @@ int main() {
     bool first_reveal = true;
     bool win = false;
 
-    const int NUM_MINES = (int) BOARD_W*BOARD_H/5;
+    bool escaped = false;
+
+    int NUM_MINES;
+    switch (difficulty) {
+        case 0: // easy
+            NUM_MINES = (int) BOARD_W*BOARD_H/10;
+            break;
+
+        case 1: // medium
+            NUM_MINES = (int) BOARD_W*BOARD_H/7;
+            break;
+
+        case 2: // hard
+            NUM_MINES = (int) BOARD_W*BOARD_H/5;
+            break;
+    }
 
     // create board
     Tile board[BOARD_H][BOARD_W];
@@ -241,8 +254,10 @@ int main() {
     //mainloop
     while (running) {
 
-        if (GetKeyState(VK_ESCAPE) & 0x8000 /*check higher order bit apparently*/) 
+        if (GetKeyState(VK_ESCAPE) & 0x8000 /*check higher order bit apparently*/) {
+            escaped = true;
             running = false;
+        }
 
         if ((GetKeyState(VK_UP) & 0x8000)||GetKeyState('W') & 0x8000) {
             if (within_board_bounds(cursor.y-1, cursor.x))
@@ -296,10 +311,152 @@ int main() {
         Sleep(80);
     }
 
-    std::cout << '\n';
-    std::cout << (win ? "You Won!" : "KABOOM!");
-    std::cout << "\nPress Any Key to Quit";
-    std::cin.get();
+    if (!escaped) {
+        std::cout << '\n';
+        std::cout << (win ? "You Won!\n" : "KABOOM!\n");
+        std::cout << '\n';
 
-    return 0; 
+        system("pause");
+    }
+
+    system("mode con: cols=100 lines=40"); // reset screen size
+
+}
+
+
+#define INCREMENT(num, limit) (num<limit) ? num++ : num=0
+#define DECREMENT(num, max) (num>0) ? num-- : num=max
+
+
+int select_difficulty(int current) {
+    int selected = current;
+
+    bool refresh;
+    bool init = true;
+
+    while (1) {
+        refresh = true;
+
+        if ((GetKeyState(VK_SPACE) & 0x8000)) {
+            return selected;
+        }
+        else if ((GetKeyState(VK_LEFT) & 0x8000)||GetKeyState('A') & 0x8000) {
+            DECREMENT(selected, 2);
+        }
+        else if ((GetKeyState(VK_RIGHT) & 0x8000)||GetKeyState('D') & 0x8000) {
+            INCREMENT(selected, 2);
+        }
+        else {
+            refresh = false;
+        }
+
+        if (refresh || init){
+            system("cls");
+            init = false;
+
+            std::cout << "< Easy : Normal : Hard >\n";
+            switch (selected) {
+                case (0):
+                    std::cout << "   /\\ \n";
+                    break;
+
+                case (1):
+                    std::cout << "           /\\ \n";
+                    break;
+
+                case (2):
+                    std::cout << "                   /\\ \n";
+                    break;
+            }
+
+            std::cout << "A/D or LEFT/RIGHT to adjust, SPACE to confirm";
+            
+            Sleep(80);
+        }
+        
+    }
+}
+
+
+int main() {
+
+    system("mode con: cols=100 lines=40");
+
+    bool running = true;
+
+    short selected_diff = 1; // difficulty scales from 0 to 2 (easy -> hard)
+    short selected_option = 0;
+
+    bool refresh;
+    bool init = true; // used to draw the first frame
+
+    while (running) {
+
+        refresh = true;
+
+        if ((GetKeyState(VK_RETURN) & 0x8000)) {
+
+            switch (selected_option) {
+                case (0): // play
+                    start_game(selected_diff);
+                    break;
+
+                case(1): // options
+                    selected_diff = select_difficulty(selected_diff);
+                    break;
+
+                case(2): // about
+                    system("cls");
+                    std::cout << "MineSweeper, implemented in C++ by Alan Ji\n\n";
+                    system("pause");
+                    break;
+
+                case(3): // quit
+                    running = false;
+                    break;
+            }
+        }
+
+        else if ((GetKeyState(VK_UP) & 0x8000)||GetKeyState('W') & 0x8000) {
+            DECREMENT(selected_option, 3);
+        } 
+        
+        else if ((GetKeyState(VK_DOWN) & 0x8000)||GetKeyState('S') & 0x8000) {
+            INCREMENT(selected_option, 3);
+        }
+
+        else {
+            refresh = false;
+        }
+
+        //draw menu
+        if (refresh || init) {
+            init = false;
+            system("cls");
+
+            std::cout << "\n\n";
+            std::cout << 
+                "   __   __  ___   __    _  _______  _______  _     _  _______  _______  _______  _______  ______   \n" <<
+                "  |  |_|  ||   | |  |  | ||       ||       || | _ | ||       ||       ||       ||       ||    _ |  \n" <<
+                "  |       ||   | |   |_| ||    ___||  _____|| || || ||    ___||    ___||    _  ||    ___||   | ||  \n" <<
+                "  |       ||   | |       ||   |___ | |_____ |       ||   |___ |   |___ |   |_| ||   |___ |   |_||_ \n" <<
+                "  |       ||   | |  _    ||    ___||_____  ||       ||    ___||    ___||    ___||    ___||    __  |\n" <<
+                "  | ||_|| ||   | | | |   ||   |___  _____| ||   _   ||   |___ |   |___ |   |    |   |___ |   |  | |\n" <<
+                "  |_|   |_||___| |_|  |__||_______||_______||__| |__||_______||_______||___|    |_______||___|  |_|\n\n";
+
+            std::cout << ((selected_option == 0) ? ">  " : " ") << "Play\n";
+
+            std::cout << ((selected_option == 1) ? ">  " : " ") << "Options\n";
+
+            std::cout << ((selected_option == 2) ? ">  " : " ") << "About\n";
+
+            std::cout << ((selected_option == 3) ? ">  " : " ") << "Quit\n\n";
+
+            std::cout << "W/S or UP/DOWN to navigate, ENTER to select";
+
+        }
+        Sleep(80);
+    }
+
+    return 0;
 }
